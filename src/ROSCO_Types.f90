@@ -33,6 +33,7 @@ TYPE, PUBLIC :: ControlParameters
     Real(4)                             :: F_SSCornerFreq               ! Setpoint Smoother mode {0: no setpoint smoothing, 1: introduce setpoint smoothing}
     Real(4)                             :: F_FlCornerFreq               ! Corner frequency (-3dB point) in the second order low pass filter of the tower-top fore-aft motion for floating feedback control [rad/s].
     Real(4)                             :: F_FlDamping                  ! Damping constant in the first order low pass filter of the tower-top fore-aft motion for floating feedback control [-].
+    REAL(4)                             :: F_YawErr                ! Corner low pass filter corner frequency for yaw controller [rad/s]    
     Real(4)                             :: F_FlpCornerFreq              ! Corner frequency (-3dB point) in the second order low pass filter of the blade root bending moment for flap control [rad/s].
     Real(4)                             :: F_FlpDamping                 ! Damping constant in the first order low pass filter of the blade root bending moment for flap control[-].
 
@@ -96,17 +97,16 @@ TYPE, PUBLIC :: ControlParameters
     REAL(4), DIMENSION(:), ALLOCATABLE  :: WE_FOPoles                   ! First order system poles
 
     INTEGER(4)                          :: Y_ControlMode                ! Yaw control mode {0: no yaw control, 1: yaw rate control, 2: yaw-by-IPC}
-    REAL(4)                             :: Y_ErrThresh                  ! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512) -- 1.745329252
+    REAL(4)                             :: Y_uSwitch                    ! Wind speed to switch between Y_ErrThresh. If zero, only the first value of Y_ErrThresh is used [rad]
+    REAL(4), DIMENSION(:), ALLOCATABLE  :: Y_ErrThresh                  ! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512) -- 1.745329252
+    REAL(4)                             :: Y_Rate                       ! Yaw rate [rad/s]
+    REAL(4)                             :: Y_MErrSet                    ! Constant yaw measurement error offset (for wake stearing) [rad]
     REAL(4)                             :: Y_IPC_IntSat                 ! Integrator saturation (maximum signal amplitude contrbution to pitch from yaw-by-IPC)
     INTEGER(4)                          :: Y_IPC_n                      ! Number of controller gains (yaw-by-IPC)
     REAL(4), DIMENSION(:), ALLOCATABLE  :: Y_IPC_KP                     ! Yaw-by-IPC proportional controller gain Kp
     REAL(4), DIMENSION(:), ALLOCATABLE  :: Y_IPC_KI                     ! Yaw-by-IPC integral controller gain Ki
     REAL(4)                             :: Y_IPC_omegaLP                ! Low-pass filter corner frequency for the Yaw-by-IPC controller to filtering the yaw alignment error, [rad/s].
     REAL(4)                             :: Y_IPC_zetaLP                 ! Low-pass filter damping factor for the Yaw-by-IPC controller to filtering the yaw alignment error, [-].
-    REAL(4)                             :: Y_MErrSet                    ! Yaw alignment error, setpoint [rad]
-    REAL(4)                             :: Y_omegaLPFast                ! Corner frequency fast low pass filter, 1.0 [Hz]
-    REAL(4)                             :: Y_omegaLPSlow                ! Corner frequency slow low pass filter, 1/60 [Hz]
-    REAL(4)                             :: Y_Rate                       ! Yaw rate [rad/s]
     
     INTEGER(4)                          :: PS_Mode                      ! Pitch saturation mode {0: no peak shaving, 1: implement pitch saturation}
     INTEGER(4)                          :: PS_BldPitchMin_N             ! Number of values in minimum blade pitch lookup table (should equal number of values in PS_WindSpeeds and PS_BldPitchMin)
