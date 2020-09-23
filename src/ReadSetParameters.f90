@@ -216,8 +216,6 @@ CONTAINS
         CntrPar%PC_RtTq99 = CntrPar%VS_RtTq*0.99
         CntrPar%VS_MinOMTq = CntrPar%VS_Rgn2K*CntrPar%VS_MinOMSpd**2
         CntrPar%VS_MaxOMTq = CntrPar%VS_Rgn2K*CntrPar%VS_RefSpd**2
-        CntrPar%VS_Rgn3Pitch = CntrPar%PC_FinePit + CntrPar%PC_Switch
-        
         CLOSE(UnControllerParameters)
         
         !------------------- HOUSEKEEPING -----------------------
@@ -228,17 +226,17 @@ CONTAINS
     ! Calculate setpoints for primary control actions    
     SUBROUTINE ComputeVariablesSetpoints(CntrPar, LocalVar, objInst)
         USE ROSCO_Types, ONLY : ControlParameters, LocalVariables, ObjectInstances
-        
+        USE Constants
         ! Allocate variables
         TYPE(ControlParameters), INTENT(INOUT)  :: CntrPar
         TYPE(LocalVariables), INTENT(INOUT)     :: LocalVar
         TYPE(ObjectInstances), INTENT(INOUT)    :: objInst
 
-        REAL(4)                                 :: VS_RefSpd        ! Referece speed for variable speed torque controller, [rad/s] 
-        REAL(4)                                 :: PC_RefSpd        ! Referece speed for pitch controller, [rad/s] 
-        REAL(4)                                 :: Omega_op         ! Optimal TSR-tracking generator speed, [rad/s]
+        REAL(8)                                 :: VS_RefSpd        ! Referece speed for variable speed torque controller, [rad/s] 
+        REAL(8)                                 :: PC_RefSpd        ! Referece speed for pitch controller, [rad/s] 
+        REAL(8)                                 :: Omega_op         ! Optimal TSR-tracking generator speed, [rad/s]
         ! temp
-        ! REAL(4)                                 :: VS_TSRop = 7.5
+        ! REAL(8)                                 :: VS_TSRop = 7.5
 
         ! ----- Calculate yaw misalignment error -----
         LocalVar%Y_MErr = LocalVar%Y_M + CntrPar%Y_MErrSet ! Yaw-alignment error
@@ -284,8 +282,10 @@ CONTAINS
         ! Define transition region setpoint errors
         LocalVar%VS_SpdErrAr = VS_RefSpd - LocalVar%GenSpeedF               ! Current speed error - Region 2.5 PI-control (Above Rated)
         LocalVar%VS_SpdErrBr = CntrPar%VS_MinOMSpd - LocalVar%GenSpeedF     ! Current speed error - Region 1.5 PI-control (Below Rated)
-    
-    
+        
+        ! Region 3 minimum pitch angle for state machine
+        LocalVar%VS_Rgn3Pitch = LocalVar%PC_MinPit + CntrPar%PC_Switch
+
     END SUBROUTINE ComputeVariablesSetpoints
     ! -----------------------------------------------------------------------------------
     ! Read avrSWAP array passed from ServoDyn    
@@ -306,7 +306,7 @@ CONTAINS
         LocalVar%GenTqMeas = avrSWAP(23)
         LocalVar%Y_M = avrSWAP(24)
         LocalVar%HorWindV = avrSWAP(27)
-        LocalVar%Y_fN = avrSWAP(37)
+        LocalVar%Nac_YawNorth = avrSWAP(37)
         LocalVar%rootMOOP(1) = avrSWAP(30)
         LocalVar%rootMOOP(2) = avrSWAP(31)
         LocalVar%rootMOOP(3) = avrSWAP(32)
@@ -551,6 +551,9 @@ CONTAINS
                      'Visit our GitHub-page to contribute to this project:                          '//NEW_LINE('A')// &
                      'https://github.com/NREL/ROSCO                                                 '//NEW_LINE('A')// &
                      '------------------------------------------------------------------------------'
+
+                ! print *, 'Version 1.0.1: pretty debug'
+
             CALL ReadControlParameterFileSub(CntrPar, accINFILE, NINT(avrSWAP(50)))
 
             IF (CntrPar%Y_ControlMode == 1) THEN
@@ -573,7 +576,7 @@ CONTAINS
             LocalVar%Y_YawEndT = -1.0 ! This will ensure that the initial yaw end time is lower than the actual time to prevent initial yawing
             
             ! Wind speed estimator initialization, we always assume an initial wind speed of 10 m/s
-            LocalVar%WE_Vw = 10
+            LocalVar%WE_Vw = LocalVar%HorWindV
             LocalVar%WE_VwI = LocalVar%WE_Vw - CntrPar%WE_Gamma*LocalVar%RotSpeed
             
             ! Setpoint Smoother initialization to zero

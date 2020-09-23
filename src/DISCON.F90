@@ -53,7 +53,9 @@ TYPE(ControlParameters), SAVE         :: CntrPar
 TYPE(LocalVariables), SAVE            :: LocalVar
 TYPE(ObjectInstances), SAVE           :: objInst
 TYPE(PerformanceData), SAVE           :: PerfData
+TYPE(DebugVariables), SAVE            :: DebugVar
 
+RootName = TRANSFER(avcOUTNAME, RootName)
 !------------------------------------------------------------------------------------------------------------------------------
 ! Main control calculations
 !------------------------------------------------------------------------------------------------------------------------------
@@ -61,18 +63,18 @@ TYPE(PerformanceData), SAVE           :: PerfData
 CALL ReadAvrSWAP(avrSWAP, LocalVar)
 CALL SetParameters(avrSWAP, aviFAIL, accINFILE, ErrMsg, SIZE(avcMSG), CntrPar, LocalVar, objInst, PerfData)
 CALL PreFilterMeasuredSignals(CntrPar, LocalVar, objInst)
-CALL WindSpeedEstimator(LocalVar, CntrPar, objInst, PerfData)
+CALL WindSpeedEstimator(LocalVar, CntrPar, objInst, PerfData, DebugVar)
 
 IF ((LocalVar%iStatus >= 0) .AND. (aviFAIL >= 0))  THEN  ! Only compute control calculations if no error has occurred and we are not on the last time step
     CALL StateMachine(CntrPar, LocalVar)
     CALL SetpointSmoother(LocalVar, CntrPar, objInst)
     CALL ComputeVariablesSetpoints(CntrPar, LocalVar, objInst)
     CALL VariableSpeedControl(avrSWAP, CntrPar, LocalVar, objInst)
-    CALL PitchControl(avrSWAP, CntrPar, LocalVar, objInst)
+    CALL PitchControl(avrSWAP, CntrPar, LocalVar, objInst, DebugVar)
     CALL YawRateControl(avrSWAP, CntrPar, LocalVar, objInst)
     CALL FlapControl(avrSWAP, CntrPar, LocalVar, objInst)
     
-    CALL Debug(LocalVar, CntrPar, avrSWAP, RootName, SIZE(avcOUTNAME))
+    CALL Debug(LocalVar, CntrPar, DebugVar, avrSWAP, RootName, SIZE(avcOUTNAME))
 END IF
 
 avcMSG = TRANSFER(TRIM(ErrMsg)//C_NULL_CHAR, avcMSG, SIZE(avcMSG))
